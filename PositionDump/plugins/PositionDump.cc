@@ -1,26 +1,9 @@
 // -*- C++ -*-
-//
-// Package:    HcalTrgStudy/PositionDump
-// Class:      PositionDump
-// 
-/**\class PositionDump PositionDump.cc HcalTrgStudy/PositionDump/plugins/PositionDump.cc
-
- Description: [one line class summary]
-
- Implementation:
-     [Notes on implementation]
-*/
-//
-// Original Author:  Dr Tais S Sakuma
-//         Created:  Thu, 17 Nov 2016 13:23:07 GMT
-//
-//
-
-
-// system include files
+//__________________________________________________________________||
 #include <memory>
+#include <iostream>
+#include <iomanip>
 
-// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
@@ -28,16 +11,17 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-//
-// class declaration
-//
 
-// If the analyzer does not use TFileService, please remove
-// the template argument to the base class so the class inherits
-// from  edm::one::EDAnalyzer<> and also remove the line from
-// constructor "usesResource("TFileService");"
-// This will improve performance in multithreaded jobs.
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloCellGeometry.h"
+#include "DataFormats/HcalDetId/interface/HcalDetId.h"
 
+#include "DataFormats/DetId/interface/DetId.h"
+
+//__________________________________________________________________||
 class PositionDump : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
    public:
       explicit PositionDump(const edm::ParameterSet&);
@@ -51,75 +35,68 @@ class PositionDump : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
       virtual void endJob() override;
 
-      // ----------member data ---------------------------
 };
 
-//
-// constants, enums and typedefs
-//
-
-//
-// static data member definitions
-//
-
-//
-// constructors and destructor
-//
+//__________________________________________________________________||
 PositionDump::PositionDump(const edm::ParameterSet& iConfig)
 
 {
-   //now do what ever initialization is needed
    usesResource("TFileService");
-
 }
 
 
+//__________________________________________________________________||
 PositionDump::~PositionDump()
 {
- 
-   // do anything here that needs to be done at desctruction time
-   // (e.g. close files, deallocate resources etc.)
 
 }
 
-
-//
-// member functions
-//
-
-// ------------ method called for each event  ------------
+//__________________________________________________________________||
 void
 PositionDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-   using namespace edm;
+  edm::ESHandle<CaloGeometry> caloGeoHandle;
+  edm::ESHandle<HcalTrigTowerGeometry> hcalTrigTowGeoHandle;
+  iSetup.get<CaloGeometryRecord>().get(caloGeoHandle);   
+  iSetup.get<CaloGeometryRecord>().get(hcalTrigTowGeoHandle);
 
+  // caloGeoHandle->getValidDetIds(DetId::Hcal);
+  auto detids = caloGeoHandle->getValidDetIds();
 
+  for(auto detid : detids)
+    {
+      if(!(detid.det() == 4)) continue; // 4 is probably HCAL
+      if(!(detid.subdetId() == 4)) continue; // 4 is probably HF
 
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
+      HcalDetId hcaldetid(detid);
+
+      auto thisCell = caloGeoHandle->getGeometry(detid);
+      // auto position = thisCell->getPosition();
+      
+      std::cout << std::setw(4) << detid.det()
+		<< std::setw(4) << detid.subdetId()
+		<< std::setw(4) << hcaldetid.ieta()
+		<< std::setw(4) << hcaldetid.iphi()
+		<< std::setw(10) << thisCell->etaPos()
+		<< " " << std::setw(20) << thisCell->phiPos()
+		<< std::endl;
+    }
 }
 
 
-// ------------ method called once each job just before starting event loop  ------------
+//__________________________________________________________________||
 void 
 PositionDump::beginJob()
 {
 }
 
-// ------------ method called once each job just after ending the event loop  ------------
+//__________________________________________________________________||
 void 
 PositionDump::endJob() 
 {
 }
 
-// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+//__________________________________________________________________||
 void
 PositionDump::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
@@ -129,5 +106,5 @@ PositionDump::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   descriptions.addDefault(desc);
 }
 
-//define this as a plug-in
+//__________________________________________________________________||
 DEFINE_FWK_MODULE(PositionDump);
