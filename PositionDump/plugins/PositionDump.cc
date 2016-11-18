@@ -77,6 +77,8 @@ PositionDump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		<< std::setw(4) << detid.subdetId()
 		<< std::setw(4) << hcaldetid.ieta()
 		<< std::setw(4) << hcaldetid.iphi()
+		<< std::setw(4) << hcaldetid.depth()
+		<< std::setw(4) << hcaldetid.hfdepth()
 		<< std::setw(10) << thisCell->etaPos()
 		<< " " << std::setw(20) << thisCell->phiPos()
 		<< std::endl;
